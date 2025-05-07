@@ -60,8 +60,8 @@ export function RideProvider({ children }: { children: ReactNode }) {
   // This simulates the lifecycle of a ride after a driver accepts it.
   // This should ideally be driven by real-time updates from a backend.
   useEffect(() => {
-    const activeRide = rides.find(r => r.status === 'driver_assigned' || r.status === 'en_route_pickup' || r.status === 'arrived_pickup' || r.status === 'in_progress');
-    let timeoutId: NodeJS.Timeout;
+    const activeRide = rides.find(r => r.user?.id === 'user123' && (r.status === 'driver_assigned' || r.status === 'en_route_pickup' || r.status === 'arrived_pickup' || r.status === 'in_progress'));
+    let timeoutId: NodeJS.Timeout | undefined = undefined;
   
     if (activeRide) {
       setIsBookingProcessActive(true); // Keep form disabled for user during active ride phases
@@ -75,21 +75,28 @@ export function RideProvider({ children }: { children: ReactNode }) {
   
       if (activeRide.status === 'driver_assigned') {
         // Simulate driver en route
-        toast({ title: "Driver En Route", description: `${activeRide.driver?.name} is coming to pick you up.` });
         timeoutId = setTimeout(() => {
-          updateRideStatus(activeRide.id, 'en_route_pickup', 'Arriving soon');
+          // Toast for the state we are transitioning TO
+          if (rides.find(r => r.id === activeRide.id)?.status === 'driver_assigned') { // Check if still relevant
+            toast({ title: "Driver En Route", description: `${activeRide.driver?.name} is coming to pick you up.` });
+            updateRideStatus(activeRide.id, 'en_route_pickup', 'Arriving soon');
+          }
         }, 4000);
       } else if (activeRide.status === 'en_route_pickup') {
         // Simulate driver arrived
-         toast({ title: "Driver Arrived", description: `${activeRide.driver?.name} has arrived.` });
         timeoutId = setTimeout(() => {
-          updateRideStatus(activeRide.id, 'arrived_pickup', undefined); // Clear ETA
+           if (rides.find(r => r.id === activeRide.id)?.status === 'en_route_pickup') { // Check if still relevant
+            toast({ title: "Driver Arrived", description: `${activeRide.driver?.name} has arrived.` });
+            updateRideStatus(activeRide.id, 'arrived_pickup', undefined); // Clear ETA
+          }
         }, 4000);
       } else if (activeRide.status === 'arrived_pickup') {
         // Simulate ride in progress
-        toast({ title: "Ride Started", description: "Your trip is now in progress." });
         timeoutId = setTimeout(() => {
-          updateRideStatus(activeRide.id, 'in_progress');
+           if (rides.find(r => r.id === activeRide.id)?.status === 'arrived_pickup') { // Check if still relevant
+            toast({ title: "Ride Started", description: "Your trip is now in progress." });
+            updateRideStatus(activeRide.id, 'in_progress');
+          }
         }, 3000);
       } else if (activeRide.status === 'in_progress') {
         // Ride completion is now explicitly handled by driver's completeRide action.
@@ -104,7 +111,11 @@ export function RideProvider({ children }: { children: ReactNode }) {
         }
     }
   
-    return () => clearTimeout(timeoutId);
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
   }, [rides, toast]);
 
 
@@ -168,7 +179,11 @@ export function RideProvider({ children }: { children: ReactNode }) {
         return ride;
       })
     );
-    setIsBookingProcessActive(false); // Re-enable booking form for user after their ride is fully complete
+     // Re-enable booking form for user if their ride is completed
+    const completedRide = rides.find(r => r.id === rideId);
+    if (completedRide && completedRide.user?.id === 'user123' && completedRide.status === 'completed') {
+        setIsBookingProcessActive(false);
+    }
   };
 
   const cancelRide = (rideId: string) => {
@@ -231,3 +246,4 @@ export function useRideContext() {
   }
   return context;
 }
+
