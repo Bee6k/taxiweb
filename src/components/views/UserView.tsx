@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { useRideContext } from '@/contexts/RideContext';
 import { StarRating } from '@/components/rating/StarRating';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CheckCircle } from 'lucide-react';
 
 export function UserView() {
@@ -90,3 +91,5 @@ export function UserView() {
     </div>
   );
 }
+
+    

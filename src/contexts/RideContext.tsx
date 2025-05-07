@@ -1,10 +1,11 @@
+
 "use client";
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { Ride, RideStatus, Driver, User, BookingDetails, ScheduledBookingDetails, Rating, DriverTierName } from '@/types';
 import { useToast } from "@/hooks/use-toast";
-import { DRIVER_TIERS_CONFIG, UNRANKED_TIER, getDriverTier } from '@/config/constants';
+import { getDriverTier, UNRANKED_TIER } from '@/config/constants'; // Import getDriverTier and UNRANKED_TIER
 
 // Initial Mock Drivers Data - now managed within the context
 const initialMockDrivers: Omit<Driver, 'ratings' | 'averageRating' | 'tier'>[] = [
@@ -24,7 +25,7 @@ interface RideContextType {
   currentDriverRides: Ride[]; 
   bookRide: (details: BookingDetails, user: User) => void;
   scheduleRide: (details: ScheduledBookingDetails, user: User) => void;
-  acceptRide: (rideId: string, driverId: string) => void; // Changed to accept driverId
+  acceptRide: (rideId: string, driverId: string) => void; 
   completeRide: (rideId: string) => void;
   cancelRide: (rideId: string) => void;
   submitRating: (rideId: string, driverId: string, userId: string, ratingValue: number) => void;
@@ -64,7 +65,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
 
   // Persist driversData to localStorage
   useEffect(() => {
-    if (driversData.length > 0) { // Avoid writing empty array on initial mount if data is loading
+    if (driversData.length > 0) { 
         localStorage.setItem('rapidryde-driversData', JSON.stringify(driversData));
     }
   }, [driversData]);
@@ -84,7 +85,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
 
   // Persist rides to localStorage whenever they change
   useEffect(() => {
-     if (rides.length > 0 || localStorage.getItem('rapidryde-rides')) { // only write if rides exist or existed before
+     if (rides.length > 0 || localStorage.getItem('rapidryde-rides')) { 
         localStorage.setItem('rapidryde-rides', JSON.stringify(rides));
      }
   }, [rides]);
@@ -138,8 +139,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeoutId);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rides]); // Removed toast from dependencies as it was causing issues with updates in render
+  }, [rides, toast]); 
 
 
   const bookRide = (details: BookingDetails, user: User) => {
@@ -193,7 +193,6 @@ export function RideProvider({ children }: { children: ReactNode }) {
         if (ride.id === rideId && ride.status === 'pending_approval') {
           const eta = `${Math.floor(Math.random() * 10) + 2} mins`;
           rideAcceptedSuccessfully = true;
-          // Use the full driver object from driversData
           return { ...ride, status: 'driver_assigned', driver: {...driver, eta} };
         }
         return ride;
@@ -203,7 +202,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
     if (rideAcceptedSuccessfully) {
       toast({ title: "Ride Accepted!", description: `${driver.name} will pick you up.` });
     }
-  }, [driversData, toast]); // Include toast
+  }, [driversData, toast]); 
   
   const completeRide = useCallback((rideId: string) => {
     let rideCompletedSuccessfully = false;
@@ -243,17 +242,14 @@ export function RideProvider({ children }: { children: ReactNode }) {
     setDriversData(prevDrivers => 
       prevDrivers.map(driver => {
         if (driver.id === driverId) {
-          // Check if this rideId by this userId has already been rated for this driver
           const existingRatingIndex = driver.ratings.findIndex(r => r.rideId === rideId && r.userId === userId);
           
           let updatedRatings: Rating[];
           if (existingRatingIndex !== -1) {
-            // Update existing rating
             updatedRatings = driver.ratings.map((r, index) => 
               index === existingRatingIndex ? { ...r, rating: ratingValue } : r
             );
           } else {
-            // Add new rating
             updatedRatings = [...driver.ratings, { rideId, userId, rating: ratingValue }];
           }
 
@@ -281,7 +277,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
   ) || undefined;
 
   const currentDriverRides = rides.filter(ride => 
-    ride.driver?.id === 'driver007' && // Assuming 'driver007' is the logged-in driver
+    ride.driver?.id === 'driver007' && 
     (ride.status !== 'completed' && ride.status !== 'cancelled' && ride.status !== 'idle')
   );
 
@@ -316,3 +312,5 @@ export function useRideContext() {
   }
   return context;
 }
+
+    
