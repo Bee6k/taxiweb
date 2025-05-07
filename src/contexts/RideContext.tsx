@@ -58,13 +58,12 @@ export function RideProvider({ children }: { children: ReactNode }) {
   }, [rides]);
 
   // This simulates the lifecycle of a ride after a driver accepts it.
-  // This should ideally be driven by real-time updates from a backend.
   useEffect(() => {
     const activeRide = rides.find(r => r.user?.id === 'user123' && (r.status === 'driver_assigned' || r.status === 'en_route_pickup' || r.status === 'arrived_pickup' || r.status === 'in_progress'));
     let timeoutId: NodeJS.Timeout | undefined = undefined;
   
     if (activeRide) {
-      setIsBookingProcessActive(true); // Keep form disabled for user during active ride phases
+      setIsBookingProcessActive(true); 
       const updateRideStatus = (rideId: string, newStatus: RideStatus, newEta?: string) => {
         setRides(prevRides =>
           prevRides.map(r =>
@@ -74,37 +73,28 @@ export function RideProvider({ children }: { children: ReactNode }) {
       };
   
       if (activeRide.status === 'driver_assigned') {
-        // Simulate driver en route
         timeoutId = setTimeout(() => {
-          // Toast for the state we are transitioning TO
-          if (rides.find(r => r.id === activeRide.id)?.status === 'driver_assigned') { // Check if still relevant
+          if (rides.find(r => r.id === activeRide.id)?.status === 'driver_assigned') { 
             toast({ title: "Driver En Route", description: `${activeRide.driver?.name} is coming to pick you up.` });
             updateRideStatus(activeRide.id, 'en_route_pickup', 'Arriving soon');
           }
         }, 4000);
       } else if (activeRide.status === 'en_route_pickup') {
-        // Simulate driver arrived
         timeoutId = setTimeout(() => {
-           if (rides.find(r => r.id === activeRide.id)?.status === 'en_route_pickup') { // Check if still relevant
+           if (rides.find(r => r.id === activeRide.id)?.status === 'en_route_pickup') { 
             toast({ title: "Driver Arrived", description: `${activeRide.driver?.name} has arrived.` });
-            updateRideStatus(activeRide.id, 'arrived_pickup', undefined); // Clear ETA
+            updateRideStatus(activeRide.id, 'arrived_pickup', undefined); 
           }
         }, 4000);
       } else if (activeRide.status === 'arrived_pickup') {
-        // Simulate ride in progress
         timeoutId = setTimeout(() => {
-           if (rides.find(r => r.id === activeRide.id)?.status === 'arrived_pickup') { // Check if still relevant
+           if (rides.find(r => r.id === activeRide.id)?.status === 'arrived_pickup') { 
             toast({ title: "Ride Started", description: "Your trip is now in progress." });
             updateRideStatus(activeRide.id, 'in_progress');
           }
         }, 3000);
-      } else if (activeRide.status === 'in_progress') {
-        // Ride completion is now explicitly handled by driver's completeRide action.
-        // No automatic completion timeout here.
       }
     } else {
-        // If no ride is in an active phase that should disable the form, ensure it's enabled.
-        // Exception: if a ride is 'pending_approval' or 'scheduled', the form might still be considered active for the user.
         const isStillPotentiallyActive = rides.some(r => r.user?.id === 'user123' && (r.status === 'pending_approval' || r.status === 'scheduled'));
         if (!isStillPotentiallyActive) {
             setIsBookingProcessActive(false);
@@ -120,7 +110,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
 
 
   const bookRide = (details: BookingDetails, user: User) => {
-    setIsBookingProcessActive(true); // Disable form for user while pending
+    setIsBookingProcessActive(true);
     setPickupLocation(details.pickup);
     setDropoffLocation(details.dropoff);
     setScheduledTime(undefined);
@@ -129,12 +119,15 @@ export function RideProvider({ children }: { children: ReactNode }) {
       id: `ride-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       pickupLocation: details.pickup,
       dropoffLocation: details.dropoff,
-      status: 'pending_approval', // New status
+      status: 'pending_approval', 
       user,
       bookedAt: new Date(),
     };
     setRides(prevRides => [...prevRides, newRide]);
-    toast({ title: "Booking Requested", description: "Waiting for a driver to accept your ride." });
+    
+    setTimeout(() => {
+      toast({ title: "Booking Requested", description: "Waiting for a driver to accept your ride." });
+    }, 0);
   };
 
   const scheduleRide = (details: ScheduledBookingDetails, user: User) => {
@@ -153,67 +146,77 @@ export function RideProvider({ children }: { children: ReactNode }) {
       bookedAt: new Date(),
     };
     setRides(prevRides => [...prevRides, newRide]);
-    toast({ title: "Ride Scheduled", description: `Your ride for ${details.dateTime.toLocaleString()} is confirmed. It will become active for drivers closer to the pickup time.` });
+
+    setTimeout(() => {
+      toast({ title: "Ride Scheduled", description: `Your ride for ${details.dateTime.toLocaleString()} is confirmed. It will become active for drivers closer to the pickup time.` });
+    }, 0);
   };
 
   const acceptRide = (rideId: string, driver: Driver) => {
+    let rideAcceptedSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
         if (ride.id === rideId && ride.status === 'pending_approval') {
-          toast({ title: "Ride Accepted!", description: `${driver.name} will pick you up.` });
           const eta = `${Math.floor(Math.random() * 10) + 2} mins`;
+          rideAcceptedSuccessfully = true;
           return { ...ride, status: 'driver_assigned', driver: {...driver, eta} };
         }
         return ride;
       })
     );
+
+    if (rideAcceptedSuccessfully) {
+      setTimeout(() => {
+        toast({ title: "Ride Accepted!", description: `${driver.name} will pick you up.` });
+      }, 0);
+    }
   };
   
   const completeRide = (rideId: string) => {
+    let rideCompletedSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
         if (ride.id === rideId && ride.status === 'in_progress') {
-           toast({ title: "Ride Completed!", description: "The driver has marked the ride as completed." });
+          rideCompletedSuccessfully = true;
           return { ...ride, status: 'completed' };
         }
         return ride;
       })
     );
-     // Re-enable booking form for user if their ride is completed
-    const completedRide = rides.find(r => r.id === rideId);
-    if (completedRide && completedRide.user?.id === 'user123' && completedRide.status === 'completed') {
-        setIsBookingProcessActive(false);
+
+    if (rideCompletedSuccessfully) {
+      setTimeout(() => {
+        toast({ title: "Ride Completed!", description: "The driver has marked the ride as completed." });
+      }, 0);
     }
   };
 
   const cancelRide = (rideId: string) => {
+    let rideCancelledSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
         if (ride.id === rideId && ride.status !== 'completed' && ride.status !== 'cancelled') {
-          toast({ title: "Ride Cancelled", description: "The ride has been cancelled." });
+          rideCancelledSuccessfully = true;
           return { ...ride, status: 'cancelled' };
         }
         return ride;
       })
     );
-    // Check if the cancelled ride was the one making the form active for the user.
-    const rideBeingCancelled = rides.find(r => r.id === rideId);
-    if (rideBeingCancelled && rideBeingCancelled.user?.id === 'user123' ) { // MOCK USER ID
-         setIsBookingProcessActive(false);
+
+    if (rideCancelledSuccessfully) {
+      setTimeout(() => {
+        toast({ title: "Ride Cancelled", description: "The ride has been cancelled." });
+      }, 0);
     }
   };
   
-  // Determine currentRide for a user (assuming one active ride per user for simplicity)
-  // This should be more robust in a real app, perhaps linking to a user ID from auth.
   const currentRide = rides.find(ride => 
-    ride.user?.id === 'user123' && // MOCK USER ID
+    ride.user?.id === 'user123' && 
     (ride.status !== 'completed' && ride.status !== 'cancelled' && ride.status !== 'idle')
   ) || undefined;
 
-
-  // Determine current active rides for a driver
   const currentDriverRides = rides.filter(ride => 
-    ride.driver?.id === 'driver007' && // MOCK DRIVER ID for James Bond
+    ride.driver?.id === 'driver007' && 
     (ride.status !== 'completed' && ride.status !== 'cancelled' && ride.status !== 'idle')
   );
 
@@ -246,4 +249,3 @@ export function useRideContext() {
   }
   return context;
 }
-
