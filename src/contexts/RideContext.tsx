@@ -1,28 +1,33 @@
 "use client";
 
 import type { ReactNode, Dispatch, SetStateAction } from 'react';
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { Ride, RideStatus, Driver, User, BookingDetails, ScheduledBookingDetails } from '@/types';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { Ride, RideStatus, Driver, User, BookingDetails, ScheduledBookingDetails, Rating, DriverTierName } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+import { DRIVER_TIERS_CONFIG, UNRANKED_TIER, getDriverTier } from '@/config/constants';
 
-// Mock Data for initial drivers list - this would typically come from a backend
-const mockDrivers: Driver[] = [
+// Initial Mock Drivers Data - now managed within the context
+const initialMockDrivers: Omit<Driver, 'ratings' | 'averageRating' | 'tier'>[] = [
   { id: 'driver1', name: 'John Doe', vehicleModel: 'Toyota Prius', licensePlate: 'XYZ 123' },
   { id: 'driver2', name: 'Jane Smith', vehicleModel: 'Honda Civic', licensePlate: 'ABC 789' },
   { id: 'driver007', name: 'James Bond', vehicleModel: 'Aston Martin DB5', licensePlate: 'BMT 216A' },
+  { id: 'driver4', name: 'Sarah Connor', vehicleModel: 'Jeep Wrangler', licensePlate: 'TERM 84' },
+  { id: 'driver5', name: 'Kyle Reese', vehicleModel: 'Ford Pinto', licensePlate: 'SAVE SC' },
 ];
 
 
 interface RideContextType {
   rides: Ride[];
   setRides: Dispatch<SetStateAction<Ride[]>>;
-  currentRide: Ride | undefined; // Current ride for the logged-in user (if user role)
-  currentDriverRides: Ride[]; // Current active rides for the logged-in driver (if driver role)
+  driversData: Driver[]; // All driver profiles
+  currentRide: Ride | undefined; 
+  currentDriverRides: Ride[]; 
   bookRide: (details: BookingDetails, user: User) => void;
   scheduleRide: (details: ScheduledBookingDetails, user: User) => void;
-  acceptRide: (rideId: string, driver: Driver) => void;
+  acceptRide: (rideId: string, driverId: string) => void; // Changed to accept driverId
   completeRide: (rideId: string) => void;
   cancelRide: (rideId: string) => void;
+  submitRating: (rideId: string, driverId: string, userId: string, ratingValue: number) => void;
   isBookingProcessActive: boolean;
   pickupLocation: string | undefined;
   dropoffLocation: string | undefined;
@@ -33,12 +38,37 @@ const RideContext = createContext<RideContextType | undefined>(undefined);
 
 export function RideProvider({ children }: { children: ReactNode }) {
   const [rides, setRides] = useState<Ride[]>([]);
+  const [driversData, setDriversData] = useState<Driver[]>([]);
   const [isBookingProcessActive, setIsBookingProcessActive] = useState(false);
   const [pickupLocation, setPickupLocation] = useState<string | undefined>(undefined);
   const [dropoffLocation, setDropoffLocation] = useState<string | undefined>(undefined);
   const [scheduledTime, setScheduledTime] = useState<Date | undefined>(undefined);
   
   const { toast } = useToast();
+
+  // Initialize driversData
+  useEffect(() => {
+    const storedDriversData = localStorage.getItem('rapidryde-driversData');
+    if (storedDriversData) {
+      setDriversData(JSON.parse(storedDriversData));
+    } else {
+      const initializedDrivers = initialMockDrivers.map(d => ({
+        ...d,
+        ratings: [],
+        averageRating: 0,
+        tier: UNRANKED_TIER.name as DriverTierName,
+      }));
+      setDriversData(initializedDrivers);
+    }
+  }, []);
+
+  // Persist driversData to localStorage
+  useEffect(() => {
+    if (driversData.length > 0) { // Avoid writing empty array on initial mount if data is loading
+        localStorage.setItem('rapidryde-driversData', JSON.stringify(driversData));
+    }
+  }, [driversData]);
+
 
   // Load rides from localStorage on mount
   useEffect(() => {
@@ -54,10 +84,12 @@ export function RideProvider({ children }: { children: ReactNode }) {
 
   // Persist rides to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('rapidryde-rides', JSON.stringify(rides));
+     if (rides.length > 0 || localStorage.getItem('rapidryde-rides')) { // only write if rides exist or existed before
+        localStorage.setItem('rapidryde-rides', JSON.stringify(rides));
+     }
   }, [rides]);
 
-  // This simulates the lifecycle of a ride after a driver accepts it.
+  // Ride lifecycle simulation
   useEffect(() => {
     const activeRide = rides.find(r => r.user?.id === 'user123' && (r.status === 'driver_assigned' || r.status === 'en_route_pickup' || r.status === 'arrived_pickup' || r.status === 'in_progress'));
     let timeoutId: NodeJS.Timeout | undefined = undefined;
@@ -106,7 +138,8 @@ export function RideProvider({ children }: { children: ReactNode }) {
         clearTimeout(timeoutId);
       }
     };
-  }, [rides, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rides]); // Removed toast from dependencies as it was causing issues with updates in render
 
 
   const bookRide = (details: BookingDetails, user: User) => {
@@ -125,9 +158,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
     };
     setRides(prevRides => [...prevRides, newRide]);
     
-    setTimeout(() => {
-      toast({ title: "Booking Requested", description: "Waiting for a driver to accept your ride." });
-    }, 0);
+    toast({ title: "Booking Requested", description: "Waiting for a driver to accept your ride." });
   };
 
   const scheduleRide = (details: ScheduledBookingDetails, user: User) => {
@@ -146,19 +177,23 @@ export function RideProvider({ children }: { children: ReactNode }) {
       bookedAt: new Date(),
     };
     setRides(prevRides => [...prevRides, newRide]);
-
-    setTimeout(() => {
-      toast({ title: "Ride Scheduled", description: `Your ride for ${details.dateTime.toLocaleString()} is confirmed. It will become active for drivers closer to the pickup time.` });
-    }, 0);
+    toast({ title: "Ride Scheduled", description: `Your ride for ${details.dateTime.toLocaleString()} is confirmed.` });
   };
 
-  const acceptRide = (rideId: string, driver: Driver) => {
+  const acceptRide = useCallback((rideId: string, driverId: string) => {
+    const driver = driversData.find(d => d.id === driverId);
+    if (!driver) {
+      toast({ title: "Error", description: "Driver not found.", variant: "destructive" });
+      return;
+    }
+
     let rideAcceptedSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
         if (ride.id === rideId && ride.status === 'pending_approval') {
           const eta = `${Math.floor(Math.random() * 10) + 2} mins`;
           rideAcceptedSuccessfully = true;
+          // Use the full driver object from driversData
           return { ...ride, status: 'driver_assigned', driver: {...driver, eta} };
         }
         return ride;
@@ -166,13 +201,11 @@ export function RideProvider({ children }: { children: ReactNode }) {
     );
 
     if (rideAcceptedSuccessfully) {
-      setTimeout(() => {
-        toast({ title: "Ride Accepted!", description: `${driver.name} will pick you up.` });
-      }, 0);
+      toast({ title: "Ride Accepted!", description: `${driver.name} will pick you up.` });
     }
-  };
+  }, [driversData, toast]); // Include toast
   
-  const completeRide = (rideId: string) => {
+  const completeRide = useCallback((rideId: string) => {
     let rideCompletedSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
@@ -185,13 +218,11 @@ export function RideProvider({ children }: { children: ReactNode }) {
     );
 
     if (rideCompletedSuccessfully) {
-      setTimeout(() => {
-        toast({ title: "Ride Completed!", description: "The driver has marked the ride as completed." });
-      }, 0);
+       toast({ title: "Ride Completed!", description: "The driver has marked the ride as completed." });
     }
-  };
+  }, [toast]);
 
-  const cancelRide = (rideId: string) => {
+  const cancelRide = useCallback((rideId: string) => {
     let rideCancelledSuccessfully = false;
     setRides(prevRides =>
       prevRides.map(ride => {
@@ -204,11 +235,45 @@ export function RideProvider({ children }: { children: ReactNode }) {
     );
 
     if (rideCancelledSuccessfully) {
-      setTimeout(() => {
-        toast({ title: "Ride Cancelled", description: "The ride has been cancelled." });
-      }, 0);
+      toast({ title: "Ride Cancelled", description: "The ride has been cancelled." });
     }
-  };
+  }, [toast]);
+
+  const submitRating = useCallback((rideId: string, driverId: string, userId: string, ratingValue: number) => {
+    setDriversData(prevDrivers => 
+      prevDrivers.map(driver => {
+        if (driver.id === driverId) {
+          // Check if this rideId by this userId has already been rated for this driver
+          const existingRatingIndex = driver.ratings.findIndex(r => r.rideId === rideId && r.userId === userId);
+          
+          let updatedRatings: Rating[];
+          if (existingRatingIndex !== -1) {
+            // Update existing rating
+            updatedRatings = driver.ratings.map((r, index) => 
+              index === existingRatingIndex ? { ...r, rating: ratingValue } : r
+            );
+          } else {
+            // Add new rating
+            updatedRatings = [...driver.ratings, { rideId, userId, rating: ratingValue }];
+          }
+
+          const totalRating = updatedRatings.reduce((acc, curr) => acc + curr.rating, 0);
+          const averageRating = updatedRatings.length > 0 ? parseFloat((totalRating / updatedRatings.length).toFixed(2)) : 0;
+          const tier = getDriverTier(averageRating).name;
+          
+          return { ...driver, ratings: updatedRatings, averageRating, tier };
+        }
+        return driver;
+      })
+    );
+
+    setRides(prevRides => 
+      prevRides.map(ride => 
+        ride.id === rideId ? { ...ride, ratingGiven: ratingValue } : ride
+      )
+    );
+    toast({ title: "Rating Submitted", description: `You rated the driver ${ratingValue} stars.` });
+  }, [toast]);
   
   const currentRide = rides.find(ride => 
     ride.user?.id === 'user123' && 
@@ -216,7 +281,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
   ) || undefined;
 
   const currentDriverRides = rides.filter(ride => 
-    ride.driver?.id === 'driver007' && 
+    ride.driver?.id === 'driver007' && // Assuming 'driver007' is the logged-in driver
     (ride.status !== 'completed' && ride.status !== 'cancelled' && ride.status !== 'idle')
   );
 
@@ -225,6 +290,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
     <RideContext.Provider value={{ 
       rides, 
       setRides, 
+      driversData,
       currentRide,
       currentDriverRides,
       bookRide, 
@@ -232,6 +298,7 @@ export function RideProvider({ children }: { children: ReactNode }) {
       acceptRide,
       completeRide,
       cancelRide,
+      submitRating,
       isBookingProcessActive,
       pickupLocation,
       dropoffLocation,

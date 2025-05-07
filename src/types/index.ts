@@ -3,12 +3,24 @@ export interface User {
   name: string; // Example user detail
 }
 
+export interface Rating {
+  rideId: string; // To ensure a ride is rated only once by a user for a specific driver
+  userId: string; // User who gave the rating
+  rating: number; // 1-5
+  // comment?: string; // Optional for future
+}
+
+export type DriverTierName = 'Diamond' | 'Platinum' | 'Gold' | 'Silver' | 'Bronze' | 'Unranked';
+
 export interface Driver {
   id: string;
   name: string;
   vehicleModel: string;
   licensePlate: string;
   eta?: string; // Estimated time of arrival
+  ratings: Rating[]; 
+  averageRating: number;
+  tier: DriverTierName;
 }
 
 export type RideStatus = 
@@ -32,6 +44,7 @@ export interface Ride {
   user: User; // Associated user
   driver?: Driver; // Associated driver (optional until assigned)
   bookedAt: Date; // Timestamp of when the ride was booked
+  ratingGiven?: number; // Stores the rating (1-5) given by the user for this ride
 }
 
 export interface BookingDetails {
