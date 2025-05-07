@@ -1,3 +1,8 @@
+export interface User {
+  id: string;
+  name: string; // Example user detail
+}
+
 export interface Driver {
   id: string;
   name: string;
@@ -8,7 +13,8 @@ export interface Driver {
 
 export type RideStatus = 
   | 'idle' // Before any booking
-  | 'searching' 
+  | 'pending_approval' // Waiting for driver to accept
+  | 'searching' // System is searching (can be skipped if driver accepts directly)
   | 'driver_assigned' 
   | 'en_route_pickup' // Driver on the way to pick up user
   | 'arrived_pickup' // Driver has arrived at pickup location
@@ -18,13 +24,14 @@ export type RideStatus =
   | 'scheduled'; // Ride is scheduled for future
 
 export interface Ride {
-  id: string;
+  id: string; // Unique ID for the ride
   pickupLocation: string;
   dropoffLocation: string;
   scheduledTime?: Date;
   status: RideStatus;
-  userId: string;
-  driverId?: string;
+  user: User; // Associated user
+  driver?: Driver; // Associated driver (optional until assigned)
+  bookedAt: Date; // Timestamp of when the ride was booked
 }
 
 export interface BookingDetails {
@@ -35,3 +42,5 @@ export interface BookingDetails {
 export interface ScheduledBookingDetails extends BookingDetails {
   dateTime: Date;
 }
+
+export type Role = 'user' | 'driver' | 'admin';

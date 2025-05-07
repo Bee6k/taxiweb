@@ -2,6 +2,8 @@ import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google'; // Corrected import names
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"; // Added Toaster import
+import { RoleProvider } from '@/contexts/RoleContext';
+import { RideProvider } from '@/contexts/RideContext';
 
 const geistSans = Geist({ // Corrected variable name
   variable: '--font-geist-sans',
@@ -26,8 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
-        <Toaster />
+        <RoleProvider>
+          <RideProvider>
+            {children}
+            <Toaster />
+          </RideProvider>
+        </RoleProvider>
       </body>
     </html>
   );

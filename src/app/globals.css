@@ -9,31 +9,31 @@ body {
 @layer base {
   :root {
     --background: 0 0% 100%; /* White */
-    --foreground: 224 71.4% 4.1%; /* Dark Blue/Black */
+    --foreground: 224 71.4% 4.1%; /* Dark Blue/Black - for text */
 
-    --card: 54 77% 88%; /* Light Yellow - adjusted for softer look */
+    --card: 60 56% 90%; /* Light Yellow (#F0E68C) - HSL approximation */
     --card-foreground: 224 71.4% 4.1%; /* Dark Blue/Black text on yellow card */
 
-    --popover: 54 77% 92%; /* Lighter Yellow for popovers */
+    --popover: 60 56% 92%; /* Lighter Yellow for popovers */
     --popover-foreground: 224 71.4% 4.1%; /* Dark Blue/Black text on popover */
 
-    --primary: 180 100% 25.1%; /* Teal */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 180 100% 25.1%; /* Teal (#008080) - HSL approximation */
+    --primary-foreground: 0 0% 100%; /* White text on Teal */
 
-    --secondary: 54 77% 82%; /* Light Yellow for secondary elements */
+    --secondary: 60 56% 85%; /* Light Yellow for secondary elements */
     --secondary-foreground: 180 100% 15%; /* Darker Teal text for contrast */
 
-    --muted: 54 77% 92%; /* Very Light Yellow for muted elements */
+    --muted: 60 56% 95%; /* Very Light Yellow for muted elements */
     --muted-foreground: 224 8% 45%; /* Adjusted Grayish text */
 
-    --accent: 180 80% 30%; /* Teal - slightly adjusted from primary for accent */
-    --accent-foreground: 0 0% 100%; /* White */
+    --accent: 180 100% 25.1%; /* Teal for interactive elements */
+    --accent-foreground: 0 0% 100%; /* White text on Teal */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 54 30% 75%; /* Desaturated Yellow/Gray for borders */
-    --input: 54 30% 85%; /* Light Desaturated Yellow/Gray for input backgrounds */
+    --border: 60 30% 80%; /* Desaturated Yellow/Gray for borders */
+    --input: 60 30% 90%; /* Light Desaturated Yellow/Gray for input backgrounds */
     --ring: 180 100% 25.1%; /* Teal for focus rings */
 
     --chart-1: 12 76% 61%;
@@ -48,7 +48,7 @@ body {
     --sidebar-foreground: 0 0% 95%;
     --sidebar-primary: 180 100% 30%; /* Teal for sidebar primary elements */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 54 70% 80%; /* Light yellow for sidebar accents */
+    --sidebar-accent: 60 56% 80%; /* Light yellow for sidebar accents */
     --sidebar-accent-foreground: 180 100% 15%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 180 100% 30%;
@@ -58,30 +58,30 @@ body {
     --background: 224 71.4% 4.1%; /* Dark Blue/Black */
     --foreground: 0 0% 98%; /* White */
 
-    --card: 180 30% 12%; /* Dark Desaturated Teal/Blue */
-    --card-foreground: 0 0% 98%; /* White */
+    --card: 180 30% 12%; /* Dark Desaturated Teal/Blue for card background */
+    --card-foreground: 0 0% 98%; /* White text on card */
 
-    --popover: 180 30% 10%; /* Darker Desaturated Teal/Blue */
-    --popover-foreground: 0 0% 98%; /* White */
+    --popover: 180 30% 10%; /* Darker Desaturated Teal/Blue for popover */
+    --popover-foreground: 0 0% 98%; /* White text on popover */
 
-    --primary: 180 100% 35%; /* Brighter Teal */
-    --primary-foreground: 0 0% 100%; /* White */
+    --primary: 180 100% 35%; /* Brighter Teal for primary actions */
+    --primary-foreground: 0 0% 100%; /* White text on Teal */
 
-    --secondary: 54 30% 20%; /* Dark Muted Yellow */
-    --secondary-foreground: 0 0% 98%; /* White */
+    --secondary: 60 40% 25%; /* Dark Muted Yellow for secondary elements */
+    --secondary-foreground: 0 0% 98%; /* White text */
 
-    --muted: 54 25% 15%; /* Darker Muted Yellow */
-    --muted-foreground: 0 0% 60%; /* Light Gray */
+    --muted: 60 35% 20%; /* Darker Muted Yellow for muted elements */
+    --muted-foreground: 0 0% 60%; /* Light Gray text */
 
-    --accent: 180 90% 40%; /* Vibrant Teal */
-    --accent-foreground: 0 0% 100%; /* White */
+    --accent: 180 90% 40%; /* Vibrant Teal for accents */
+    --accent-foreground: 0 0% 100%; /* White text */
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 180 20% 25%; /* Dark Desaturated Teal */
-    --input: 180 20% 20%; /* Darker Desaturated Teal */
-    --ring: 180 100% 35%; /* Brighter Teal */
+    --border: 180 20% 25%; /* Dark Desaturated Teal for borders */
+    --input: 180 20% 20%; /* Darker Desaturated Teal for input backgrounds */
+    --ring: 180 100% 35%; /* Brighter Teal for focus rings */
     
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -94,7 +94,7 @@ body {
     --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 180 100% 40%; /* Brighter Teal for sidebar */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 54 30% 25%; /* Dark muted yellow for sidebar accents */
+    --sidebar-accent: 60 40% 30%; /* Dark muted yellow for sidebar accents */
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 180 20% 20%;
     --sidebar-ring: 180 100% 40%;
